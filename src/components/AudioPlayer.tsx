@@ -119,11 +119,11 @@ export default function AudioPlayer({
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-[#2a2a2a] px-4 md:px-6 py-3 md:py-4 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-[#2a2a2a] px-4 md:px-6 py-4 md:py-4 z-50">
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} src={src ?? undefined} preload="metadata" />
 
-      <div className="max-w-4xl mx-auto space-y-2 md:space-y-3">
+      <div className="max-w-4xl mx-auto space-y-3 md:space-y-3">
         {/* Track info */}
         <div className="flex items-center gap-3">
           <span className="text-[#e84d4d] text-xs font-mono font-bold shrink-0">
@@ -147,22 +147,22 @@ export default function AudioPlayer({
         </div>
 
         {/* ── Mobile controls: −30s −20s −10s | Prev Play/Pause Next | +20s ── */}
-        <div className="flex md:hidden items-center justify-between gap-0.5">
+        <div className="flex md:hidden items-center justify-between gap-0.5 pt-2">
           <ControlBtn onClick={() => seekBack(30)} title="Back 30s">
-            <span className="text-[10px] font-mono leading-none">−30s</span>
+            <span className="text-xs font-mono leading-none">−30s</span>
           </ControlBtn>
           <ControlBtn onClick={() => seekBack(20)} title="Back 20s">
-            <span className="text-[10px] font-mono leading-none">−20s</span>
+            <span className="text-xs font-mono leading-none">−20s</span>
           </ControlBtn>
           <ControlBtn onClick={() => seekBack(10)} title="Back 10s">
-            <span className="text-[10px] font-mono leading-none">−10s</span>
+            <span className="text-xs font-mono leading-none">−10s</span>
           </ControlBtn>
           <ControlBtn onClick={onPrev} disabled={!hasPrev} title="Previous track">
             <PrevIcon />
           </ControlBtn>
           <button
             onClick={togglePlay}
-            className="w-10 h-10 rounded-full bg-[#e84d4d] hover:bg-[#f05f5f] active:bg-[#c73c3c] text-white flex items-center justify-center transition-colors shrink-0"
+            className="w-11 h-11 rounded-full bg-[#e84d4d] hover:bg-[#f05f5f] active:bg-[#c73c3c] text-white flex items-center justify-center transition-colors shrink-0"
           >
             {isPlaying ? <PauseIcon /> : <PlayIcon />}
           </button>
@@ -170,7 +170,7 @@ export default function AudioPlayer({
             <NextIcon />
           </ControlBtn>
           <ControlBtn onClick={() => seekForward(20)} title="Forward 20s">
-            <span className="text-[10px] font-mono leading-none">+20s</span>
+            <span className="text-xs font-mono leading-none">+20s</span>
           </ControlBtn>
         </div>
 
@@ -268,7 +268,7 @@ function StopIcon() {
 
 function PrevIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
       <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
     </svg>
   );
@@ -276,7 +276,7 @@ function PrevIcon() {
 
 function NextIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
       <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
     </svg>
   );

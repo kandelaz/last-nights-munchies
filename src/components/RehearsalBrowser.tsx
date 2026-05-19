@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { rehearsals, MONTH_NAMES } from "@/data/rehearsals";
+import { rehearsals, MONTH_NAMES, getAudioPath } from "@/data/rehearsals";
 import AudioPlayer from "./AudioPlayer";
+
+function formatDuration(seconds: number): string {
+  if (!seconds || isNaN(seconds)) return "";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 type Section = "2026" | "2025" | "archive";
 const ARCHIVE_YEARS = ["2024", "2023", "2022", "2021"];
@@ -27,6 +34,7 @@ export default function RehearsalBrowser() {
   const [selectedDay, setSelectedDay] = useState<string | null>(init.day);
   const [navExpanded, setNavExpanded] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
+  const [durations, setDurations] = useState<Record<string, number>>({});
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -37,6 +45,24 @@ export default function RehearsalBrowser() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
+
+  // Load metadata durations for all tracks in the current session
+  const sessionKey = `${activeSection}-${archiveYear ?? ""}-${selectedMonth ?? ""}-${selectedDay ?? ""}`;
+  useEffect(() => {
+    setDurations({});
+    if (!activeYear || !selectedMonth || !selectedDay) return;
+    const audios: HTMLAudioElement[] = [];
+    (rehearsals[activeYear]?.[selectedMonth]?.[selectedDay] ?? []).forEach((track) => {
+      const a = new Audio(getAudioPath(activeYear, selectedMonth, selectedDay, track.filename));
+      a.preload = "metadata";
+      a.addEventListener("loadedmetadata", () => {
+        setDurations((prev) => ({ ...prev, [track.filename]: a.duration }));
+      });
+      audios.push(a);
+    });
+    return () => audios.forEach((a) => { a.src = ""; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionKey]);
 
   const activeYear =
     activeSection === "archive" ? archiveYear : activeSection;
@@ -310,10 +336,14 @@ export default function RehearsalBrowser() {
                         </span>
                       )}
                     </span>
-                    <span className="flex-1 text-sm">{track.title}</span>
-                    {isActive && (
-                      <span className="text-[#e84d4d] text-xs font-medium shrink-0">
+                    <span className="flex-1 min-w-0 text-sm truncate">{track.title}</span>
+                    {isActive ? (
+                      <span className="text-[#e84d4d] text-xs font-medium shrink-0 pl-2">
                         Playing
+                      </span>
+                    ) : (
+                      <span className="text-[#444] text-xs font-mono shrink-0 pl-2">
+                        {formatDuration(durations[track.filename])}
                       </span>
                     )}
                   </button>

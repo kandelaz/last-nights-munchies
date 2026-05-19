@@ -13,6 +13,19 @@ export interface RehearsalData {
 }
 
 export const rehearsals: RehearsalData = {
+  "2022": {
+    "06": {
+      "24": [
+        { number: 1, title: "Criss Cross",                  filename: "01-criss-cross.mp3" },
+        { number: 2, title: "Turn Up the Bottle",           filename: "02-turn-up-the-bottle.mp3" },
+        { number: 3, title: "We Drink",                     filename: "03-we-drink.mp3" },
+        { number: 4, title: "Good Days Good Times",         filename: "04-good-days-good-times.mp3" },
+        { number: 5, title: "Criss Cross of Chaos (Slower)",filename: "05-criss-cross-of-chaos-slower.mp3" },
+        { number: 6, title: "Girl Introductory Jam",        filename: "06-girl-introductory-jam.mp3" },
+        { number: 7, title: "Criss Cross of Chaos (Faster)",filename: "07-criss-cross-of-chaos-faster.mp3" },
+      ],
+    },
+  },
   "2026": {
     "05": {
       "15": [
