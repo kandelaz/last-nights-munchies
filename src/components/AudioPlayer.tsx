@@ -95,6 +95,12 @@ export default function AudioPlayer({
     audio.currentTime = Math.max(0, audio.currentTime - secs);
   };
 
+  const seekForward = (secs: number) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = Math.min(duration || 0, audio.currentTime + secs);
+  };
+
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const audio = audioRef.current;
     if (!audio || !duration) return;
@@ -113,14 +119,14 @@ export default function AudioPlayer({
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-[#2a2a2a] px-6 py-4 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-[#2a2a2a] px-4 md:px-6 py-3 md:py-4 z-50">
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} src={src ?? undefined} preload="metadata" />
 
-      <div className="max-w-4xl mx-auto space-y-3">
+      <div className="max-w-4xl mx-auto space-y-2 md:space-y-3">
         {/* Track info */}
         <div className="flex items-center gap-3">
-          <span className="text-[#e84d4d] text-xs font-mono font-bold">
+          <span className="text-[#e84d4d] text-xs font-mono font-bold shrink-0">
             #{String(track.number).padStart(2, "0")}
           </span>
           <span className="text-white font-medium text-sm truncate">{track.title}</span>
@@ -131,7 +137,7 @@ export default function AudioPlayer({
 
         {/* Progress bar */}
         <div
-          className="h-1 bg-[#2a2a2a] rounded-full cursor-pointer group hover:h-2 transition-all"
+          className="h-1 bg-[#2a2a2a] rounded-full cursor-pointer hover:h-2 transition-all"
           onClick={handleProgressClick}
         >
           <div
@@ -140,14 +146,42 @@ export default function AudioPlayer({
           />
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center justify-between">
+        {/* ── Mobile controls: −30s −20s −10s | Prev Play/Pause Next | +20s ── */}
+        <div className="flex md:hidden items-center justify-between gap-0.5">
+          <ControlBtn onClick={() => seekBack(30)} title="Back 30s">
+            <span className="text-[10px] font-mono leading-none">−30s</span>
+          </ControlBtn>
+          <ControlBtn onClick={() => seekBack(20)} title="Back 20s">
+            <span className="text-[10px] font-mono leading-none">−20s</span>
+          </ControlBtn>
+          <ControlBtn onClick={() => seekBack(10)} title="Back 10s">
+            <span className="text-[10px] font-mono leading-none">−10s</span>
+          </ControlBtn>
+          <ControlBtn onClick={onPrev} disabled={!hasPrev} title="Previous track">
+            <PrevIcon />
+          </ControlBtn>
+          <button
+            onClick={togglePlay}
+            className="w-10 h-10 rounded-full bg-[#e84d4d] hover:bg-[#f05f5f] active:bg-[#c73c3c] text-white flex items-center justify-center transition-colors shrink-0"
+          >
+            {isPlaying ? <PauseIcon /> : <PlayIcon />}
+          </button>
+          <ControlBtn onClick={onNext} disabled={!hasNext} title="Next track">
+            <NextIcon />
+          </ControlBtn>
+          <ControlBtn onClick={() => seekForward(20)} title="Forward 20s">
+            <span className="text-[10px] font-mono leading-none">+20s</span>
+          </ControlBtn>
+        </div>
+
+        {/* ── Desktop controls: −40s −20s | Prev Play/Pause Next | +20s | Volume ── */}
+        <div className="hidden md:flex items-center justify-between">
           <div className="flex items-center gap-1">
+            <ControlBtn onClick={() => seekBack(40)} title="Back 40s">
+              <span className="text-xs font-mono">−40s</span>
+            </ControlBtn>
             <ControlBtn onClick={() => seekBack(20)} title="Back 20s">
               <span className="text-xs font-mono">−20s</span>
-            </ControlBtn>
-            <ControlBtn onClick={() => seekBack(10)} title="Back 10s">
-              <span className="text-xs font-mono">−10s</span>
             </ControlBtn>
             <ControlBtn onClick={onPrev} disabled={!hasPrev} title="Previous track">
               <PrevIcon />
@@ -158,15 +192,15 @@ export default function AudioPlayer({
             >
               {isPlaying ? <PauseIcon /> : <PlayIcon />}
             </button>
-            <ControlBtn onClick={handleStop} title="Stop">
-              <StopIcon />
-            </ControlBtn>
             <ControlBtn onClick={onNext} disabled={!hasNext} title="Next track">
               <NextIcon />
             </ControlBtn>
+            <ControlBtn onClick={() => seekForward(20)} title="Forward 20s">
+              <span className="text-xs font-mono">+20s</span>
+            </ControlBtn>
           </div>
 
-          {/* Volume */}
+          {/* Volume (desktop only) */}
           <div className="flex items-center gap-2">
             <VolumeIcon muted={volume === 0} />
             <input
