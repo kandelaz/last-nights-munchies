@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { rehearsals, MONTH_NAMES, getAudioPath } from "@/data/rehearsals";
 import AudioPlayer from "./AudioPlayer";
 
@@ -35,6 +36,18 @@ export default function RehearsalBrowser() {
   const [navExpanded, setNavExpanded] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
   const [durations, setDurations] = useState<Record<string, number>>({});
+  const [heroOpacity, setHeroOpacity] = useState(1);
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  // Dissolve hero as user scrolls
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroHeight = heroRef.current?.offsetHeight ?? 1;
+      setHeroOpacity(Math.max(0, 1 - window.scrollY / heroHeight));
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -143,15 +156,10 @@ export default function RehearsalBrowser() {
     <div className={currentTrack ? "pb-36" : ""}>
 
       {/* ── Header ── */}
-      <header className="flex items-center justify-between mb-12 gap-4">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight">
-            Last Night&apos;s Munchies
-          </h1>
-          <p className="text-[#555] mt-0.5 text-xs tracking-wide uppercase">
-            Rehearsal Archives
-          </p>
-        </div>
+      <header className="flex items-center justify-between mb-6 gap-4">
+        <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight">
+          Rehearsal Archives
+        </h1>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 shrink-0">
@@ -199,6 +207,32 @@ export default function RehearsalBrowser() {
           )}
         </div>
       </header>
+
+      {/* ── Band logo image (scroll-dissolve) ── */}
+      <div
+        ref={heroRef}
+        className="w-full mb-10"
+        style={{ opacity: heroOpacity }}
+      >
+        {/* Desktop logo */}
+        <Image
+          src="/last-nights-munchies-desktop.jpg"
+          alt="Last Night's Munchies"
+          width={1920}
+          height={392}
+          className="hidden md:block w-full h-auto"
+          priority
+        />
+        {/* Mobile logo */}
+        <Image
+          src="/last-nights-munchies-mobile.jpg"
+          alt="Last Night's Munchies"
+          width={1400}
+          height={463}
+          className="block md:hidden w-full h-auto"
+          priority
+        />
+      </div>
 
       {/* ── Archive: pick a year ── */}
       {activeSection === "archive" && !archiveYear && (

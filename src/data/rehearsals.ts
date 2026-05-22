@@ -16,17 +16,25 @@ export const rehearsals: RehearsalData = {
   "2022": {
     "06": {
       "24": [
-        { number: 1, title: "Criss Cross",                  filename: "01-criss-cross.mp3" },
-        { number: 2, title: "Turn Up the Bottle",           filename: "02-turn-up-the-bottle.mp3" },
-        { number: 3, title: "We Drink",                     filename: "03-we-drink.mp3" },
-        { number: 4, title: "Good Days Good Times",         filename: "04-good-days-good-times.mp3" },
-        { number: 5, title: "Criss Cross of Chaos (Slower)",filename: "05-criss-cross-of-chaos-slower.mp3" },
-        { number: 6, title: "Girl Introductory Jam",        filename: "06-girl-introductory-jam.mp3" },
-        { number: 7, title: "Criss Cross of Chaos (Faster)",filename: "07-criss-cross-of-chaos-faster.mp3" },
+        { number: 1,  title: "Criss Cross (Take 1)",                    filename: "01-criss-cross-take-1.mp3" },
+        { number: 2,  title: "Turn Up the Bottle (Take 1)",             filename: "02-turn-up-the-bottle-take-1.mp3" },
+        { number: 3,  title: "We Drink (Take 1)",                       filename: "03-we-drink-take-1.mp3" },
+        { number: 4,  title: "Good Days Good Times (Take 1)",           filename: "04-good-days-good-times-take-1.mp3" },
+        { number: 5,  title: "Criss Cross (Take 2)",                    filename: "05-criss-cross-take-2.mp3" },
+        { number: 6,  title: "Turn Up the Bottle (Take 2)",             filename: "06-turn-up-the-bottle-take-2.mp3" },
+        { number: 7,  title: "We Drink (Take 2)",                       filename: "07-we-drink-take-2.mp3" },
+        { number: 8,  title: "Good Days Good Times (Take 2)",           filename: "08-good-days-good-times-take-2.mp3" },
+        { number: 9,  title: "Criss Cross Take 3 (Drunk Fast Version)", filename: "09-criss-cross-take-3-drunk-fast-version.mp3" },
+        { number: 10, title: "Girl Introductory Jam",                   filename: "10-girl-introductory-jam.mp3" },
       ],
     },
   },
   "2026": {
+    "04": {
+      "17": [
+        { number: 1, title: "Ain't No Sunshine (Early Version)", filename: "aint-no-sunshine-early-version.mp3" },
+      ],
+    },
     "05": {
       "15": [
         { number: 1,  title: "We Drink",                filename: "01-we-drink.mp3" },
