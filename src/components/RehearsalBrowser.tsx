@@ -12,8 +12,8 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-type Section = "2026" | "2025" | "archive";
-const ARCHIVE_YEARS = ["2024", "2023", "2022", "2021"];
+type Section = "2026" | "archive";
+const ARCHIVE_YEARS = ["2022"];
 
 function getDefaultsForYear(year: string) {
   const months = Object.keys(rehearsals[year] ?? {}).sort();
@@ -23,9 +23,22 @@ function getDefaultsForYear(year: string) {
   return { month, day };
 }
 
+// Flat list of every session for a section
+function getSessions(section: Section) {
+  const years = section === "2026" ? ["2026"] : ARCHIVE_YEARS;
+  const items: { year: string; month: string; day: string }[] = [];
+  for (const year of years) {
+    for (const month of Object.keys(rehearsals[year] ?? {}).sort()) {
+      for (const day of Object.keys(rehearsals[year]?.[month] ?? {}).sort()) {
+        items.push({ year, month, day });
+      }
+    }
+  }
+  return items;
+}
+
 export default function RehearsalBrowser() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
 
   const [activeSection, setActiveSection] = useState<Section>("2026");
   const [archiveYear, setArchiveYear] = useState<string | null>(null);
@@ -33,13 +46,14 @@ export default function RehearsalBrowser() {
   const init = getDefaultsForYear("2026");
   const [selectedMonth, setSelectedMonth] = useState<string | null>(init.month);
   const [selectedDay, setSelectedDay] = useState<string | null>(init.day);
-  const [navExpanded, setNavExpanded] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
   const [durations, setDurations] = useState<Record<string, number>>({});
   const [heroOpacity, setHeroOpacity] = useState(1);
   const heroRef = useRef<HTMLDivElement>(null);
 
-  // Dissolve hero as user scrolls
+  const [openDropdown, setOpenDropdown] = useState<Section | null>(null);
+
+  // Dissolve hero on scroll
   useEffect(() => {
     const handleScroll = () => {
       const heroHeight = heroRef.current?.offsetHeight ?? 1;
@@ -49,17 +63,19 @@ export default function RehearsalBrowser() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu when clicking outside
+  // Close dropdown on outside click
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!openDropdown) return;
     const handler = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+      if (!navRef.current?.contains(e.target as Node)) setOpenDropdown(null);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [menuOpen]);
+  }, [openDropdown]);
 
-  // Load metadata durations for all tracks in the current session
+  // Load track durations for current session
+  const activeYear =
+    activeSection === "archive" ? archiveYear : activeSection;
   const sessionKey = `${activeSection}-${archiveYear ?? ""}-${selectedMonth ?? ""}-${selectedDay ?? ""}`;
   useEffect(() => {
     setDurations({});
@@ -77,16 +93,6 @@ export default function RehearsalBrowser() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionKey]);
 
-  const activeYear =
-    activeSection === "archive" ? archiveYear : activeSection;
-
-  const months = activeYear
-    ? Object.keys(rehearsals[activeYear] ?? {}).sort()
-    : [];
-  const days =
-    activeYear && selectedMonth
-      ? Object.keys(rehearsals[activeYear]?.[selectedMonth] ?? {}).sort()
-      : [];
   const tracks =
     activeYear && selectedMonth && selectedDay
       ? (rehearsals[activeYear]?.[selectedMonth]?.[selectedDay] ?? [])
@@ -94,45 +100,17 @@ export default function RehearsalBrowser() {
   const currentTrack =
     currentTrackIndex !== null ? (tracks[currentTrackIndex] ?? null) : null;
 
-  function switchSection(s: Section) {
-    setActiveSection(s);
-    setMenuOpen(false);
-    setNavExpanded(false);
-    setCurrentTrackIndex(null);
-    if (s !== "archive") {
-      const d = getDefaultsForYear(s);
-      setSelectedMonth(d.month);
-      setSelectedDay(d.day);
-      setArchiveYear(null);
-    } else {
-      setArchiveYear(null);
-      setSelectedMonth(null);
-      setSelectedDay(null);
-    }
+  function handleNavButtonClick(s: Section) {
+    setOpenDropdown((prev) => (prev === s ? null : s));
   }
 
-  function selectArchiveYear(year: string) {
-    setArchiveYear(year);
-    const d = getDefaultsForYear(year);
-    setSelectedMonth(d.month);
-    setSelectedDay(d.day);
-    setCurrentTrackIndex(null);
-    setNavExpanded(false);
-  }
-
-  function selectMonth(month: string) {
+  function selectSession(section: Section, year: string, month: string, day: string) {
+    setActiveSection(section);
+    setArchiveYear(section === "archive" ? year : null);
     setSelectedMonth(month);
-    const newDays = activeYear
-      ? Object.keys(rehearsals[activeYear]?.[month] ?? {}).sort()
-      : [];
-    setSelectedDay(newDays[newDays.length - 1] ?? null);
-    setCurrentTrackIndex(null);
-  }
-
-  function selectDay(day: string) {
     setSelectedDay(day);
     setCurrentTrackIndex(null);
-    setNavExpanded(false);
+    setOpenDropdown(null);
   }
 
   function handleNext() {
@@ -144,14 +122,6 @@ export default function RehearsalBrowser() {
       setCurrentTrackIndex(currentTrackIndex - 1);
   }
 
-  const formattedDate =
-    selectedMonth && selectedDay
-      ? `${MONTH_NAMES[selectedMonth]} ${parseInt(selectedDay, 10)}, ${activeYear}`
-      : null;
-
-  const sectionLabel = (s: Section) =>
-    s === "archive" ? "Archive" : s;
-
   return (
     <div className={currentTrack ? "pb-36" : ""}>
 
@@ -161,60 +131,69 @@ export default function RehearsalBrowser() {
           Rehearsal Archives
         </h1>
 
-        {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-1 shrink-0">
-          {(["2026", "2025", "archive"] as Section[]).map((s) => (
+        {/* Nav */}
+        <div className="relative flex items-center gap-1 shrink-0" ref={navRef}>
+          {(["2026", "archive"] as Section[]).map((s) => (
             <button
               key={s}
-              onClick={() => switchSection(s)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              onClick={() => handleNavButtonClick(s)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeSection === s
                   ? "bg-[#e84d4d] text-white shadow-sm shadow-[#e84d4d]/30"
+                  : openDropdown === s
+                  ? "bg-[#1e1e1e] text-white"
                   : "text-[#888] hover:text-white hover:bg-[#1e1e1e]"
               }`}
             >
-              {sectionLabel(s)}
+              {s === "archive" ? "Archive" : s}
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className={`w-3 h-3 opacity-60 transition-transform shrink-0 ${openDropdown === s ? "rotate-180" : ""}`}
+              >
+                <path d="M7 10l5 5 5-5z" />
+              </svg>
             </button>
           ))}
-        </nav>
 
-        {/* Mobile hamburger */}
-        <div className="relative md:hidden shrink-0" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen((o) => !o)}
-            className="p-2 text-[#888] hover:text-white transition-colors"
-            aria-label="Open menu"
-          >
-            {menuOpen ? <CloseIcon /> : <HamburgerIcon />}
-          </button>
-
-          {menuOpen && (
-            <div className="absolute right-0 top-10 bg-[#161616] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-2xl z-40 min-w-[150px]">
-              {(["2026", "2025", "archive"] as Section[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => switchSection(s)}
-                  className={`w-full px-5 py-3.5 text-sm text-left transition-colors ${
-                    activeSection === s
-                      ? "text-[#e84d4d] bg-[#e84d4d]/10 font-medium"
-                      : "text-[#aaa] hover:text-white hover:bg-[#222]"
-                  }`}
-                >
-                  {sectionLabel(s)}
-                </button>
-              ))}
+          {/* Dropdown */}
+          {openDropdown && (
+            <div className="absolute right-0 top-full mt-2 bg-[#161616] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-2xl z-40 w-[calc(100vw-3rem)] md:w-auto md:min-w-[180px]">
+              {getSessions(openDropdown).map(({ year, month, day }) => {
+                const isActive =
+                  activeSection === openDropdown &&
+                  (openDropdown === "archive" ? archiveYear === year : true) &&
+                  selectedMonth === month &&
+                  selectedDay === day;
+                const label =
+                  openDropdown === "archive"
+                    ? `${year} · ${MONTH_NAMES[month]} ${parseInt(day, 10)}`
+                    : `${MONTH_NAMES[month]} ${parseInt(day, 10)}`;
+                return (
+                  <button
+                    key={`${year}-${month}-${day}`}
+                    onClick={() => selectSession(openDropdown, year, month, day)}
+                    className={`w-full text-left px-5 py-3 text-sm transition-colors ${
+                      isActive
+                        ? "text-[#e84d4d] bg-[#e84d4d]/10 font-medium"
+                        : "text-[#aaa] hover:text-white hover:bg-[#222]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
       </header>
 
-      {/* ── Band logo image (scroll-dissolve) ── */}
+      {/* ── Band logo (scroll-dissolve) ── */}
       <div
         ref={heroRef}
         className="w-full mb-10"
         style={{ opacity: heroOpacity }}
       >
-        {/* Desktop logo */}
         <Image
           src="/last-nights-munchies-desktop.jpg"
           alt="Last Night's Munchies"
@@ -223,7 +202,6 @@ export default function RehearsalBrowser() {
           className="hidden md:block w-full h-auto"
           priority
         />
-        {/* Mobile logo */}
         <Image
           src="/last-nights-munchies-mobile.jpg"
           alt="Last Night's Munchies"
@@ -233,114 +211,6 @@ export default function RehearsalBrowser() {
           priority
         />
       </div>
-
-      {/* ── Archive: pick a year ── */}
-      {activeSection === "archive" && !archiveYear && (
-        <div className="mb-10">
-          <p className="text-[#555] text-xs uppercase tracking-widest mb-4">
-            Select Year
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            {ARCHIVE_YEARS.map((year) => (
-              <TabButton key={year} active={false} onClick={() => selectArchiveYear(year)}>
-                {year}
-              </TabButton>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Month / Day navigation (shown once a year is active) ── */}
-      {activeYear && (activeSection !== "archive" || archiveYear) && (
-        <div className="mb-10">
-          {/* Back to archive list */}
-          {activeSection === "archive" && archiveYear && (
-            <button
-              onClick={() => {
-                setArchiveYear(null);
-                setSelectedMonth(null);
-                setSelectedDay(null);
-              }}
-              className="flex items-center gap-1 text-[#555] hover:text-[#888] text-xs mb-6 transition-colors"
-            >
-              ← Archive
-            </button>
-          )}
-
-          {!navExpanded ? (
-            /* Collapsed date pill */
-            formattedDate && (
-              <button
-                onClick={() => setNavExpanded(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#161616] border border-[#2a2a2a] text-[#aaa] hover:text-white hover:border-[#444] transition-colors text-sm group"
-              >
-                <span className="font-medium text-white">{formattedDate}</span>
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-3 h-3 text-[#555] group-hover:text-[#888] transition-colors shrink-0"
-                >
-                  <path d="M7 10l5 5 5-5z" />
-                </svg>
-              </button>
-            )
-          ) : (
-            /* Expanded month/day tabs */
-            <div className="space-y-7">
-              {months.length > 0 && (
-                <nav>
-                  <p className="text-[#555] text-xs uppercase tracking-widest mb-3">Month</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {months.map((m) => (
-                      <TabButton
-                        key={m}
-                        active={selectedMonth === m}
-                        onClick={() => selectMonth(m)}
-                      >
-                        {MONTH_NAMES[m]}
-                      </TabButton>
-                    ))}
-                  </div>
-                </nav>
-              )}
-
-              {days.length > 0 && (
-                <nav>
-                  <p className="text-[#555] text-xs uppercase tracking-widest mb-3">Day</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {days.map((d) => (
-                      <TabButton
-                        key={d}
-                        active={selectedDay === d}
-                        onClick={() => selectDay(d)}
-                      >
-                        {parseInt(d, 10)}
-                      </TabButton>
-                    ))}
-                  </div>
-                </nav>
-              )}
-
-              <button
-                onClick={() => setNavExpanded(false)}
-                className="flex items-center gap-1.5 text-[#555] hover:text-[#888] text-xs transition-colors"
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-                  <path d="M7 14l5-5 5 5z" />
-                </svg>
-                Collapse
-              </button>
-            </div>
-          )}
-
-          {/* No sessions message */}
-          {months.length === 0 && (
-            <p className="text-[#555] text-sm pt-4">
-              No sessions recorded for {activeYear} yet.
-            </p>
-          )}
-        </div>
-      )}
 
       {/* ── Track list ── */}
       {tracks.length > 0 && (
@@ -376,7 +246,7 @@ export default function RehearsalBrowser() {
                         Playing
                       </span>
                     ) : (
-                      <span className="text-[#444] text-xs font-mono shrink-0 pl-2">
+                      <span className="text-[#bbb] text-xs font-mono shrink-0 pl-2">
                         {formatDuration(durations[track.filename])}
                       </span>
                     )}
@@ -402,46 +272,5 @@ export default function RehearsalBrowser() {
         hasPrev={currentTrackIndex !== null && currentTrackIndex > 0}
       />
     </div>
-  );
-}
-
-/* ── Shared sub-components ── */
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-        active
-          ? "bg-[#e84d4d] text-white shadow-lg shadow-[#e84d4d]/20"
-          : "bg-[#161616] text-[#888] hover:bg-[#1e1e1e] hover:text-white border border-[#2a2a2a]"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function HamburgerIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
-      <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
-      <path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
   );
 }
