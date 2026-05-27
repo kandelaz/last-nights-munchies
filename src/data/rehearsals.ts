@@ -87,3 +87,34 @@ export const MONTH_NAMES: Record<string, string> = {
 export function getAudioPath(year: string, month: string, day: string, filename: string): string {
   return `/audio/rehearsals/${year}-${month}-${day}/${filename}`;
 }
+
+export function trackSlug(filename: string): string {
+  return filename.replace(/\.mp3$/i, "");
+}
+
+export function getTrackBySlug(
+  session: string,
+  slug: string
+): { track: Track; year: string; month: string; day: string } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(session);
+  if (!m) return null;
+  const [, year, month, day] = m;
+  const tracks = rehearsals[year]?.[month]?.[day];
+  if (!tracks) return null;
+  const track = tracks.find((t) => trackSlug(t.filename) === slug);
+  return track ? { track, year, month, day } : null;
+}
+
+export function getAllShareableTracks(): { session: string; track: string }[] {
+  const items: { session: string; track: string }[] = [];
+  for (const [year, months] of Object.entries(rehearsals)) {
+    for (const [month, days] of Object.entries(months)) {
+      for (const [day, tracks] of Object.entries(days)) {
+        for (const t of tracks) {
+          items.push({ session: `${year}-${month}-${day}`, track: trackSlug(t.filename) });
+        }
+      }
+    }
+  }
+  return items;
+}

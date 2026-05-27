@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { rehearsals, MONTH_NAMES, getAudioPath } from "@/data/rehearsals";
+import { rehearsals, MONTH_NAMES, getAudioPath, trackSlug, Track } from "@/data/rehearsals";
 import AudioPlayer from "./AudioPlayer";
+import ShareMenu from "./ShareMenu";
 
 function formatDuration(seconds: number): string {
   if (!seconds || isNaN(seconds)) return "";
@@ -52,6 +53,18 @@ export default function RehearsalBrowser() {
   const heroRef = useRef<HTMLDivElement>(null);
 
   const [openDropdown, setOpenDropdown] = useState<Section | null>(null);
+
+  const [share, setShare] = useState<
+    | {
+        track: Track;
+        variant: "popover" | "sheet";
+        anchorRect: DOMRect | null;
+      }
+    | null
+  >(null);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
+  const pressStart = useRef<{ x: number; y: number } | null>(null);
 
   // Dissolve hero on scroll
   useEffect(() => {
@@ -111,6 +124,45 @@ export default function RehearsalBrowser() {
     setSelectedDay(day);
     setCurrentTrackIndex(null);
     setOpenDropdown(null);
+  }
+
+  function openShare(
+    track: Track,
+    variant: "popover" | "sheet",
+    anchorRect: DOMRect | null
+  ) {
+    setShare({ track, variant, anchorRect });
+  }
+
+  function buildShareUrl(track: Track): string {
+    if (!activeYear || !selectedMonth || !selectedDay) return "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}/t/${activeYear}-${selectedMonth}-${selectedDay}/${trackSlug(track.filename)}`;
+  }
+
+  function startLongPress(track: Track, e: React.PointerEvent) {
+    if (e.pointerType === "mouse") return;
+    longPressFired.current = false;
+    pressStart.current = { x: e.clientX, y: e.clientY };
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      if (navigator.vibrate) navigator.vibrate(15);
+      openShare(track, "sheet", null);
+    }, 500);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer.current !== null) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  function maybeCancelOnMove(e: React.PointerEvent) {
+    if (!pressStart.current) return;
+    const dx = e.clientX - pressStart.current.x;
+    const dy = e.clientY - pressStart.current.y;
+    if (Math.hypot(dx, dy) > 10) cancelLongPress();
   }
 
   function handleNext() {
@@ -223,34 +275,64 @@ export default function RehearsalBrowser() {
               const isActive = currentTrackIndex === index;
               return (
                 <li key={track.number}>
-                  <button
-                    onClick={() => setCurrentTrackIndex(index)}
-                    className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-colors text-left group ${
+                  <div
+                    className={`w-full flex items-center gap-4 pl-4 pr-2 py-3 rounded-lg transition-colors text-left group ${
                       isActive
                         ? "bg-[#e84d4d]/15 border border-[#e84d4d]/30 text-white"
                         : "bg-[#161616] hover:bg-[#1e1e1e] border border-transparent text-[#bbb] hover:text-white"
                     }`}
+                    style={{ WebkitTouchCallout: "none" }}
                   >
-                    <span className="w-7 shrink-0 text-center">
+                    <button
+                      onClick={() => {
+                        if (longPressFired.current) {
+                          longPressFired.current = false;
+                          return;
+                        }
+                        setCurrentTrackIndex(index);
+                      }}
+                      onPointerDown={(e) => startLongPress(track, e)}
+                      onPointerUp={cancelLongPress}
+                      onPointerCancel={cancelLongPress}
+                      onPointerLeave={cancelLongPress}
+                      onPointerMove={maybeCancelOnMove}
+                      onContextMenu={(e) => {
+                        if (longPressFired.current) e.preventDefault();
+                      }}
+                      className="flex-1 min-w-0 flex items-center gap-4 text-left select-none"
+                    >
+                      <span className="w-7 shrink-0 text-center">
+                        {isActive ? (
+                          <span className="text-[#e84d4d] text-base leading-none">♪</span>
+                        ) : (
+                          <span className="text-[#555] text-xs font-mono group-hover:text-[#888]">
+                            {String(track.number).padStart(2, "0")}
+                          </span>
+                        )}
+                      </span>
+                      <span className="flex-1 min-w-0 text-sm truncate">{track.title}</span>
                       {isActive ? (
-                        <span className="text-[#e84d4d] text-base leading-none">♪</span>
+                        <span className="text-[#e84d4d] text-xs font-medium shrink-0 pl-2">
+                          Playing
+                        </span>
                       ) : (
-                        <span className="text-[#555] text-xs font-mono group-hover:text-[#888]">
-                          {String(track.number).padStart(2, "0")}
+                        <span className="text-[#bbb] text-xs font-mono shrink-0 pl-2">
+                          {formatDuration(durations[track.filename])}
                         </span>
                       )}
-                    </span>
-                    <span className="flex-1 min-w-0 text-sm truncate">{track.title}</span>
-                    {isActive ? (
-                      <span className="text-[#e84d4d] text-xs font-medium shrink-0 pl-2">
-                        Playing
-                      </span>
-                    ) : (
-                      <span className="text-[#bbb] text-xs font-mono shrink-0 pl-2">
-                        {formatDuration(durations[track.filename])}
-                      </span>
-                    )}
-                  </button>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                        openShare(track, "popover", rect);
+                      }}
+                      title="Share track"
+                      aria-label={`Share ${track.title}`}
+                      className="hidden md:flex w-8 h-8 items-center justify-center rounded-md text-[#666] hover:text-white hover:bg-[#222] transition-colors shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    >
+                      <ShareIcon />
+                    </button>
+                  </div>
                 </li>
               );
             })}
@@ -271,6 +353,24 @@ export default function RehearsalBrowser() {
         }
         hasPrev={currentTrackIndex !== null && currentTrackIndex > 0}
       />
+
+      {share && (
+        <ShareMenu
+          onClose={() => setShare(null)}
+          shareUrl={buildShareUrl(share.track)}
+          trackTitle={share.track.title}
+          variant={share.variant}
+          anchorRect={share.anchorRect}
+        />
+      )}
     </div>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+      <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92S21 19.61 21 18s-1.34-1.92-3-1.92z" />
+    </svg>
   );
 }
