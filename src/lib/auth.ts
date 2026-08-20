@@ -1,4 +1,4 @@
-export const ARCHIVE_PASSWORD = process.env.ARCHIVE_PASSWORD ?? "sriracha";
+export const ARCHIVE_PASSWORD = process.env.ARCHIVE_PASSWORD ?? "coldpizza";
 export const UNLOCK_COOKIE = "lnm_unlocked";
 export const UNLOCK_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
