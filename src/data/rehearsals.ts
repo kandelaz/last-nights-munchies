@@ -2,6 +2,7 @@ export interface Track {
   number: number;
   title: string;
   filename: string;
+  url?: string;
 }
 
 export interface RehearsalData {
@@ -11,6 +12,17 @@ export interface RehearsalData {
     };
   };
 }
+
+export type SessionKind = "rehearsal" | "show";
+
+export interface SessionMeta {
+  kind?: SessionKind;
+  venue?: string;
+}
+
+export const sessionMeta: Record<string, SessionMeta> = {
+  "2026-07-19": { kind: "show", venue: "Tacoma Porchfest" },
+};
 
 export const rehearsals: RehearsalData = {
   "2022": {
@@ -75,6 +87,22 @@ export const rehearsals: RehearsalData = {
         { number: 18, title: "Joe Song Idea",                             filename: "18-joe-song-idea.mp3" },
       ],
     },
+    "07": {
+      "19": [
+        { number: 1,  title: "Intro",                filename: "01-intro.mp3",                    url: "https://drive.google.com/uc?export=download&id=11Sft7JYsfKmNAL3Kgb85FDUqpdg3g3K3" },
+        { number: 2,  title: "Criss Cross of Chaos", filename: "02-criss-cross-of-chaos.mp3",     url: "https://drive.google.com/uc?export=download&id=1B_O2LRIj2DjDfYe_mc3tKFk8unfB5YoW" },
+        { number: 3,  title: "We Drink",             filename: "03-we-drink.mp3",                 url: "https://drive.google.com/uc?export=download&id=1FMh-2j-EvUndQTs10QV3Pq1uJDKfm5hM" },
+        { number: 4,  title: "Dance Till You Die",   filename: "04-dance-till-you-die.mp3",       url: "https://drive.google.com/uc?export=download&id=1DF0KEqM5kYvKMw1UgSd37qPOMO3gpWg5" },
+        { number: 5,  title: "Low",                  filename: "05-low.mp3",                      url: "https://drive.google.com/uc?export=download&id=1IGY7W_Odak3bK5aX2h65aF0HUopkbEHH" },
+        { number: 6,  title: "Ain't No Sunshine",    filename: "06-aint-no-sunshine.mp3",         url: "https://drive.google.com/uc?export=download&id=1Ge3lpikKLrhUBZ8o5pTPz8IT0eSbkqML" },
+        { number: 7,  title: "PB N Jam",             filename: "07-pb-n-jam.mp3",                 url: "https://drive.google.com/uc?export=download&id=1v8Qd72nYoo-RMfED_R0_3QmDYCzTyGVl" },
+        { number: 8,  title: "Drop D Jam",           filename: "08-drop-d-jam.mp3",               url: "https://drive.google.com/uc?export=download&id=1b4IYrhaEMSFbYboFCs5CVonbxx_74vm7" },
+        { number: 9,  title: "Love Sock",            filename: "09-love-sock.mp3",                url: "https://drive.google.com/uc?export=download&id=12v40HpnWKFIadFr32rlyPSFeOemAIZ48" },
+        { number: 10, title: "Girl",                 filename: "10-girl.mp3",                     url: "https://drive.google.com/uc?export=download&id=1mqZ_ZXBg8m-dSi0iaNvO2IDaDisxNeSD" },
+        { number: 11, title: "Turn Up the Bottle",   filename: "11-turn-up-the-bottle.mp3",       url: "https://drive.google.com/uc?export=download&id=1Di8rnbeK4ULAJoZrXBQccrBoYeSK_RgA" },
+        { number: 12, title: "Good Days Good Times", filename: "12-good-days-good-times.mp3",     url: "https://drive.google.com/uc?export=download&id=1_jLZx8Qhsr5hEAH0HGtwq-P6oXCeMpjf" },
+      ],
+    },
   },
 };
 
@@ -86,6 +114,19 @@ export const MONTH_NAMES: Record<string, string> = {
 
 export function getAudioPath(year: string, month: string, day: string, filename: string): string {
   return `/audio/rehearsals/${year}-${month}-${day}/${filename}`;
+}
+
+export function getTrackSrc(
+  track: Track,
+  year: string,
+  month: string,
+  day: string
+): string {
+  return track.url ?? getAudioPath(year, month, day, track.filename);
+}
+
+export function getSessionMeta(year: string, month: string, day: string): SessionMeta {
+  return sessionMeta[`${year}-${month}-${day}`] ?? {};
 }
 
 export function trackSlug(filename: string): string {

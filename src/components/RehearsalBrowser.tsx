@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { rehearsals, MONTH_NAMES, getAudioPath, trackSlug, Track } from "@/data/rehearsals";
+import { rehearsals, MONTH_NAMES, getTrackSrc, trackSlug, getSessionMeta, Track } from "@/data/rehearsals";
 import AudioPlayer from "./AudioPlayer";
 import ShareMenu from "./ShareMenu";
 
@@ -95,7 +95,7 @@ export default function RehearsalBrowser() {
     if (!activeYear || !selectedMonth || !selectedDay) return;
     const audios: HTMLAudioElement[] = [];
     (rehearsals[activeYear]?.[selectedMonth]?.[selectedDay] ?? []).forEach((track) => {
-      const a = new Audio(getAudioPath(activeYear, selectedMonth, selectedDay, track.filename));
+      const a = new Audio(getTrackSrc(track, activeYear, selectedMonth, selectedDay));
       a.preload = "metadata";
       a.addEventListener("loadedmetadata", () => {
         setDurations((prev) => ({ ...prev, [track.filename]: a.duration }));
@@ -217,10 +217,13 @@ export default function RehearsalBrowser() {
                   (openDropdown === "archive" ? archiveYear === year : true) &&
                   selectedMonth === month &&
                   selectedDay === day;
-                const label =
+                const meta = getSessionMeta(year, month, day);
+                const dateLabel =
                   openDropdown === "archive"
                     ? `${year} · ${MONTH_NAMES[month]} ${parseInt(day, 10)}`
                     : `${MONTH_NAMES[month]} ${parseInt(day, 10)}`;
+                const label =
+                  meta.kind === "show" ? `${dateLabel} · Show` : dateLabel;
                 return (
                   <button
                     key={`${year}-${month}-${day}`}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Track, getAudioPath } from "@/data/rehearsals";
+import { Track, getTrackSrc } from "@/data/rehearsals";
 
 interface AudioPlayerProps {
   track: Track | null;
@@ -37,7 +37,7 @@ export default function AudioPlayer({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
 
-  const src = track ? getAudioPath(year, month, day, track.filename) : null;
+  const src = track ? getTrackSrc(track, year, month, day) : null;
 
   useEffect(() => {
     const audio = audioRef.current;
