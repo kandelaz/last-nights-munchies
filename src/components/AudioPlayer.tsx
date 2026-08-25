@@ -147,7 +147,7 @@ export default function AudioPlayer({
         </div>
 
         {/* ── Mobile controls: −30s −20s −10s | Prev Play/Pause Next | +20s ── */}
-        <div className="flex md:hidden items-center justify-between gap-0.5 pt-2">
+        <div className="flex md:hidden items-center justify-between gap-0.5 pt-2 mx-auto w-[85%]">
           <ControlBtn onClick={() => seekBack(30)} title="Back 30s">
             <span className="text-xs font-mono leading-none">−30s</span>
           </ControlBtn>
@@ -174,9 +174,10 @@ export default function AudioPlayer({
           </ControlBtn>
         </div>
 
-        {/* ── Desktop controls: −40s −20s | Prev Play/Pause Next | +20s | Volume ── */}
-        <div className="hidden md:flex items-center justify-between">
-          <div className="flex items-center gap-1">
+        {/* ── Desktop controls: (spacer) | −40s −20s Prev Play Next +20s | Volume ── */}
+        <div className="hidden md:grid grid-cols-3 items-center">
+          <div />
+          <div className="flex items-center gap-1 justify-center">
             <ControlBtn onClick={() => seekBack(40)} title="Back 40s">
               <span className="text-xs font-mono">−40s</span>
             </ControlBtn>
@@ -201,7 +202,7 @@ export default function AudioPlayer({
           </div>
 
           {/* Volume (desktop only) */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end">
             <VolumeIcon muted={volume === 0} />
             <input
               type="range"

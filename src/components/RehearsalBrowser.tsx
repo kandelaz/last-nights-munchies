@@ -13,6 +13,16 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function formatTotal(seconds: number): string {
+  if (!seconds || isNaN(seconds)) return "";
+  const totalMin = Math.round(seconds / 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h} hr`;
+  return `${h} hr ${m} min`;
+}
+
 type Section = "2026" | "archive";
 const ARCHIVE_YEARS = ["2022"];
 
@@ -177,76 +187,10 @@ export default function RehearsalBrowser() {
   return (
     <div className={currentTrack ? "pb-36" : ""}>
 
-      {/* ── Header ── */}
-      <header className="flex items-center justify-between mb-6 gap-4">
-        <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight">
-          Rehearsal Archives
-        </h1>
-
-        {/* Nav */}
-        <div className="relative flex items-center gap-1 shrink-0" ref={navRef}>
-          {(["2026", "archive"] as Section[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => handleNavButtonClick(s)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeSection === s
-                  ? "bg-[#e84d4d] text-white shadow-sm shadow-[#e84d4d]/30"
-                  : openDropdown === s
-                  ? "bg-[#1e1e1e] text-white"
-                  : "text-[#888] hover:text-white hover:bg-[#1e1e1e]"
-              }`}
-            >
-              {s === "archive" ? "Archive" : s}
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className={`w-3 h-3 opacity-60 transition-transform shrink-0 ${openDropdown === s ? "rotate-180" : ""}`}
-              >
-                <path d="M7 10l5 5 5-5z" />
-              </svg>
-            </button>
-          ))}
-
-          {/* Dropdown */}
-          {openDropdown && (
-            <div className="absolute right-0 top-full mt-2 bg-[#161616] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-2xl z-40 w-[calc(100vw-3rem)] md:w-auto md:min-w-[180px]">
-              {getSessions(openDropdown).map(({ year, month, day }) => {
-                const isActive =
-                  activeSection === openDropdown &&
-                  (openDropdown === "archive" ? archiveYear === year : true) &&
-                  selectedMonth === month &&
-                  selectedDay === day;
-                const meta = getSessionMeta(year, month, day);
-                const dateLabel =
-                  openDropdown === "archive"
-                    ? `${year} · ${MONTH_NAMES[month]} ${parseInt(day, 10)}`
-                    : `${MONTH_NAMES[month]} ${parseInt(day, 10)}`;
-                const label =
-                  meta.kind === "show" ? `${dateLabel} · Show` : dateLabel;
-                return (
-                  <button
-                    key={`${year}-${month}-${day}`}
-                    onClick={() => selectSession(openDropdown, year, month, day)}
-                    className={`w-full text-left px-5 py-3 text-sm transition-colors ${
-                      isActive
-                        ? "text-[#e84d4d] bg-[#e84d4d]/10 font-medium"
-                        : "text-[#aaa] hover:text-white hover:bg-[#222]"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </header>
-
       {/* ── Band logo (scroll-dissolve) ── */}
       <div
         ref={heroRef}
-        className="w-full mb-10"
+        className="w-full mb-6"
         style={{ opacity: heroOpacity }}
       >
         <Image
@@ -268,11 +212,139 @@ export default function RehearsalBrowser() {
       </div>
 
       {/* ── Track list ── */}
-      {tracks.length > 0 && (
+      {tracks.length > 0 && activeYear && selectedMonth && selectedDay && (
         <section>
-          <p className="text-[#555] text-xs uppercase tracking-widest mb-4">
-            {tracks.length} track{tracks.length !== 1 ? "s" : ""}
-          </p>
+          {(() => {
+            const meta = getSessionMeta(activeYear, selectedMonth, selectedDay);
+            const label = `${MONTH_NAMES[selectedMonth]} ${parseInt(selectedDay, 10)}, ${activeYear}${meta.kind === "show" ? " · Show" : ""}`;
+
+            return (
+              <div className="relative flex items-center gap-3 mb-4" ref={navRef}>
+                {/* Date */}
+                <h2 className="text-white text-base md:text-lg font-medium min-w-0 truncate">
+                  {label}
+                </h2>
+
+                {/* Tracks count + total time */}
+                {(() => {
+                  const allKnown = tracks.every((t) => durations[t.filename] > 0);
+                  const total = tracks.reduce((sum, t) => sum + (durations[t.filename] || 0), 0);
+                  return (
+                    <p className="text-[#555] text-xs uppercase tracking-widest shrink-0">
+                      {tracks.length} track{tracks.length !== 1 ? "s" : ""}
+                      {allKnown && total > 0 ? ` · ${formatTotal(total)}` : ""}
+                    </p>
+                  );
+                })()}
+
+                {/* Hamburger (mobile + tablet) */}
+                <button
+                  onClick={() => setOpenDropdown((prev) => (prev ? null : activeSection))}
+                  aria-label="Open sessions menu"
+                  className={`lg:hidden w-9 h-9 flex items-center justify-center rounded-lg shrink-0 ml-auto transition-colors ${
+                    openDropdown ? "bg-[#1e1e1e] text-white" : "text-[#aaa] hover:text-white hover:bg-[#1e1e1e]"
+                  }`}
+                >
+                  <HamburgerIcon />
+                </button>
+
+                {/* Section tabs (desktop) */}
+                <div className="hidden lg:flex items-center gap-1 shrink-0 ml-auto">
+                  {(["2026", "archive"] as Section[]).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleNavButtonClick(s)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        activeSection === s
+                          ? "bg-[#e84d4d] text-white shadow-sm shadow-[#e84d4d]/30"
+                          : openDropdown === s
+                          ? "bg-[#1e1e1e] text-white"
+                          : "text-[#888] hover:text-white hover:bg-[#1e1e1e]"
+                      }`}
+                    >
+                      {s === "archive" ? "Archive" : s}
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className={`w-3 h-3 opacity-60 transition-transform shrink-0 ${openDropdown === s ? "rotate-180" : ""}`}
+                      >
+                        <path d="M7 10l5 5 5-5z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Dropdown */}
+                {openDropdown && (
+                  <div className="absolute right-0 top-full mt-2 bg-[#161616] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-2xl z-40 w-[calc(100vw-3rem)] md:w-auto md:min-w-[220px] lg:min-w-[200px]">
+                    {/* Mobile/tablet: show all sections grouped */}
+                    <div className="lg:hidden">
+                      {(["2026", "archive"] as Section[]).map((section) => {
+                        const sessions = getSessions(section);
+                        if (sessions.length === 0) return null;
+                        return (
+                          <div key={section}>
+                            <p className="px-5 pt-3 pb-1 text-[10px] uppercase tracking-widest text-[#666] font-medium">
+                              {section === "archive" ? "Archive" : section}
+                            </p>
+                            {sessions.map(({ year, month, day }) => {
+                              const isActive =
+                                activeSection === section &&
+                                (section === "archive" ? archiveYear === year : true) &&
+                                selectedMonth === month &&
+                                selectedDay === day;
+                              const meta = getSessionMeta(year, month, day);
+                              const dateLabel = `${MONTH_NAMES[month]} ${parseInt(day, 10)}, ${year}`;
+                              const itemLabel = meta.kind === "show" ? `${dateLabel} · Show` : dateLabel;
+                              return (
+                                <button
+                                  key={`${year}-${month}-${day}`}
+                                  onClick={() => selectSession(section, year, month, day)}
+                                  className={`w-full text-left px-5 py-3 text-sm transition-colors ${
+                                    isActive
+                                      ? "text-[#e84d4d] bg-[#e84d4d]/10 font-medium"
+                                      : "text-[#aaa] hover:text-white hover:bg-[#222]"
+                                  }`}
+                                >
+                                  {itemLabel}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Desktop: single-section dropdown for the clicked tab */}
+                    <div className="hidden lg:block">
+                      {getSessions(openDropdown).map(({ year, month, day }) => {
+                        const isActive =
+                          activeSection === openDropdown &&
+                          (openDropdown === "archive" ? archiveYear === year : true) &&
+                          selectedMonth === month &&
+                          selectedDay === day;
+                        const meta = getSessionMeta(year, month, day);
+                        const dateLabel = `${MONTH_NAMES[month]} ${parseInt(day, 10)}, ${year}`;
+                        const itemLabel = meta.kind === "show" ? `${dateLabel} · Show` : dateLabel;
+                        return (
+                          <button
+                            key={`${year}-${month}-${day}`}
+                            onClick={() => selectSession(openDropdown, year, month, day)}
+                            className={`w-full text-left px-5 py-3 text-sm transition-colors ${
+                              isActive
+                                ? "text-[#e84d4d] bg-[#e84d4d]/10 font-medium"
+                                : "text-[#aaa] hover:text-white hover:bg-[#222]"
+                            }`}
+                          >
+                            {itemLabel}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <ul className="space-y-1">
             {tracks.map((track, index) => {
               const isActive = currentTrackIndex === index;
@@ -374,6 +446,14 @@ function ShareIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
       <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92S21 19.61 21 18s-1.34-1.92-3-1.92z" />
+    </svg>
+  );
+}
+
+function HamburgerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+      <path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
     </svg>
   );
 }
