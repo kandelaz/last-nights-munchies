@@ -22,6 +22,7 @@ export interface SessionMeta {
 
 export const sessionMeta: Record<string, SessionMeta> = {
   "2026-07-19": { kind: "show", venue: "Tacoma Porchfest" },
+  "2026-11-06": { kind: "show", venue: "Orient Express" },
 };
 
 export const rehearsals: RehearsalData = {
@@ -101,6 +102,22 @@ export const rehearsals: RehearsalData = {
         { number: 10, title: "Girl",                 filename: "10-girl.mp3" },
         { number: 11, title: "Turn Up the Bottle",   filename: "11-turn-up-the-bottle.mp3" },
         { number: 12, title: "Good Days Good Times", filename: "12-good-days-good-times.mp3" },
+      ],
+    },
+    "11": {
+      "06": [
+        { number: 1,  title: "Intro",                filename: "01-intro.mp3" },
+        { number: 2,  title: "Criss Cross of Chaos", filename: "02-criss-cross-of-chaos.mp3" },
+        { number: 3,  title: "We Drink",             filename: "03-we-drink.mp3" },
+        { number: 4,  title: "Dance Till You Die",   filename: "04-dance-till-you-die.mp3" },
+        { number: 5,  title: "Ain't No Sunshine",    filename: "05-aint-no-sunshine.mp3" },
+        { number: 6,  title: "Low",                  filename: "06-low.mp3" },
+        { number: 7,  title: "Jam",                  filename: "07-jam.mp3" },
+        { number: 8,  title: "Girl",                 filename: "08-girl.mp3" },
+        { number: 9,  title: "PB & Jam",             filename: "09-pb-and-jam.mp3" },
+        { number: 10, title: "Good Days Good Times", filename: "10-good-days-good-times.mp3" },
+        { number: 11, title: "It Would Be Nice",     filename: "11-it-would-be-nice.mp3" },
+        { number: 12, title: "Turn Up the Bottle",   filename: "12-turn-up-the-bottle.mp3" },
       ],
     },
   },
